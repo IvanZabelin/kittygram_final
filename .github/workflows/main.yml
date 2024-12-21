@@ -149,15 +149,6 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
-            # Установка docker-compose, если он не установлен
-            if ! command -v docker-compose &> /dev/null
-            then
-              echo "docker-compose не найден, установка..."
-              sudo curl -L "https://github.com/docker/compose/releases/download/v2.18.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-              sudo chmod +x /usr/local/bin/docker-compose
-            fi
-            
-            # Запуск деплоя
             cd dev/kittygram
             sudo docker compose -f docker-compose.production.yml pull
             sudo docker compose -f docker-compose.production.yml down
