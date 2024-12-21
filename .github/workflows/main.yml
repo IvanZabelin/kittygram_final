@@ -7,6 +7,7 @@ on:
 
 jobs:
 
+  # Тесты на бэкенде
   tests:
     runs-on: ubuntu-latest
     services:
@@ -20,29 +21,30 @@ jobs:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
-    - name: Check out code
-      uses: actions/checkout@v3
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: 3.9
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip 
-        pip install flake8==6.0.0 flake8-isort==6.0.0
-        pip install -r ./backend/requirements.txt
-    - name: Run flake8 and django tests
-      env:
-        POSTGRES_USER: django_user
-        POSTGRES_PASSWORD: django_password
-        POSTGRES_DB: django_db
-        DB_HOST: 127.0.0.1
-        DB_PORT: 5432
-      run: |
-        python -m flake8 backend/
-        cd backend/
-        python manage.py test
+      - name: Check out code
+        uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8==6.0.0 flake8-isort==6.0.0
+          pip install -r ./backend/requirements.txt
+      - name: Run flake8 and django tests
+        env:
+          POSTGRES_USER: django_user
+          POSTGRES_PASSWORD: django_password
+          POSTGRES_DB: django_db
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+        run: |
+          python -m flake8 backend/
+          cd backend/
+          python manage.py test
 
+  # Тесты на фронтенде
   frontend_tests:
     runs-on: ubuntu-latest
     steps:
@@ -60,6 +62,7 @@ jobs:
           cd frontend/
           npm run test
 
+  # Сборка и пуш бэкенд-образа на Docker Hub
   build_and_push_to_docker_hub:
     name: Push Docker image to DockerHub (Backend)
     runs-on: ubuntu-latest
@@ -81,6 +84,7 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/kittygram_backend:latest
 
+  # Сборка и пуш фронтенд-образа на Docker Hub
   build_frontend_and_push_to_docker_hub:
     name: Push Docker image to DockerHub (Frontend)
     runs-on: ubuntu-latest
@@ -102,11 +106,11 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/kittygram_frontend:latest
 
+  # Сборка и пуш gateway-образа на Docker Hub
   build_gateway_and_push_to_docker_hub:
     name: Push Docker image to DockerHub (Gateway)
     runs-on: ubuntu-latest
-    needs:
-      - tests
+    needs: tests
     steps:
       - name: Check out the repo
         uses: actions/checkout@v3
@@ -124,6 +128,7 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/kittygram_gateway:latest
 
+  # Деплой на сервер
   deploy:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -159,6 +164,7 @@ jobs:
             sudo docker-compose -f docker-compose.production.yml exec backend python manage.py collectstatic --noinput
             sudo docker-compose -f docker-compose.production.yml exec backend python manage.py migrate
 
+  # Отправка уведомления
   send_message:
     runs-on: ubuntu-latest
     needs: deploy
