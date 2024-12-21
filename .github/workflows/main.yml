@@ -149,14 +149,23 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
-            cd dev/kittygram
-            sudo docker-compose -f docker-compose.production.yml pull
-            sudo docker-compose -f docker-compose.production.yml down
-            sudo docker-compose -f docker-compose.production.yml up -d
-            sudo docker system prune -af
-            sudo docker-compose -f docker-compose.production.yml exec backend python manage.py collectstatic
-            sudo docker-compose -f docker-compose.production.yml exec backend cp -r /app/collected_static/. web/backend_static/static
-            sudo docker-compose -f docker-compose.production.yml exec backend python manage.py migrate
+          # Установка docker-compose, если он не установлен
+          if ! command -v docker-compose &> /dev/null
+          then
+            echo "docker-compose не найден, установка..."
+            sudo curl -L "https://github.com/docker/compose/releases/download/v2.18.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+            sudo chmod +x /usr/local/bin/docker-compose
+          fi
+          
+          # Запуск деплоя
+          cd dev/kittygram
+          sudo docker compose -f docker-compose.production.yml pull
+          sudo docker compose -f docker-compose.production.yml down
+          sudo docker compose -f docker-compose.production.yml up -d
+          sudo docker system prune -af
+          sudo docker compose -f docker-compose.production.yml exec backend python manage.py collectstatic
+          sudo docker compose -f docker-compose.production.yml exec backend cp -r /app/collected_static/. web/backend_static/static
+          sudo docker compose -f docker-compose.production.yml exec backend python manage.py migrate
 
   send_message:
     runs-on: ubuntu-latest
